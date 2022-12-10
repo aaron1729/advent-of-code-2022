@@ -49,12 +49,32 @@ for instruction in lst_of_instructions:
     head_pos[1] += instruction[1]
     tail_pos = new_tail_pos(head_pos, tail_pos)
     tail_pos_tuple = (tail_pos[0], tail_pos[1])
-    # print('instruction is', instruction, 'and head is at', head_pos, 'and now tail pos is', tail_pos)
     visited_by_tail.append(tail_pos)
     visited_by_tail_dedupe.add(tail_pos_tuple)
-
-# print('visited by tail is', visited_by_tail)
 
 print('number of tail moves is', len(visited_by_tail))
 
 print('number of locations visited by tail is', len(visited_by_tail_dedupe))
+
+
+### part 2
+
+nodes = []
+for _ in range(10):
+    nodes.append([0,0])
+
+visited_by_tail_2 = [[0, 0]]
+visited_by_tail_dedupe_2 = {(0, 0)}
+
+for instruction in lst_of_instructions:
+    nodes[0][0] += instruction[0]
+    nodes[0][1] += instruction[1]
+    for i in range(9):
+        nodes[i+1] = new_tail_pos(nodes[i], nodes[i+1])
+    tail_pos_tuple = (nodes[9][0], nodes[9][1])
+    visited_by_tail_2.append(nodes[9])
+    visited_by_tail_dedupe_2.add(tail_pos_tuple)
+
+print('for part 2, number of tail moves is', len(visited_by_tail_2))
+
+print ('for part 2, number of locations visited by tail is', len(visited_by_tail_dedupe_2))
