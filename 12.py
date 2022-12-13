@@ -81,15 +81,41 @@ while not found_E:
                 the_min_data = [node[2], i, j]
     current = (the_min_data[1], the_min_data[2])
     if current == E:
+        found_E = True
         print('found E, and its distance is', dijkstra1[E[0]][E[1]][2])
 
 
+### part 2: similar algorithm, but now run backwards from E
 
+dijkstra2 = [[[num, False, math.inf] for num in sublst] for sublst in lst3]
 
+dijkstra2[E[0]][E[1]][2] = 0
 
+found_a = False
+current = E
 
-
-
-
-
-
+while not found_a:
+    height_current = dijkstra2[current[0]][current[1]][0]
+    Deltas = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+    for Delta in Deltas:
+        new = tuple(map(sum, zip(current, Delta)))
+        # make sure new is on the grid:
+        if new[0] >= 0 and new[0] < len(dijkstra2) and new[1] >= 0 and new[1] < len(dijkstra2[0]):
+            # make sure we can walk to new
+            height_new = dijkstra2[new[0]][new[1]][0]
+            if (height_current - height_new <= 1):
+                # make sure new is unvisited:
+                if not dijkstra2[new[0]][new[1]][1]:
+                    # set its tentative distance
+                    dijkstra2[new[0]][new[1]][2] = dijkstra2[current[0]][current[1]][2] + 1
+    dijkstra2[current[0]][current[1]][1] = True
+    # find an unvisited node with minimum known distance. (there may be many of these, but just choose the first one.)
+    the_min_data = [math.inf, None, None]
+    for i, row in enumerate(dijkstra2):
+        for j, node in enumerate(row):
+            if (not node[1]) and (node[2] < the_min_data[0]):
+                the_min_data = [node[2], i, j]
+    current = (the_min_data[1], the_min_data[2])
+    if dijkstra2[current[0]][current[1]][0] == ord('a'):
+        found_a = True
+        print('found a point of height a, and its distance is', dijkstra2[current[0]][current[1]][2])
