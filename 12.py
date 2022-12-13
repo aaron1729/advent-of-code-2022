@@ -46,90 +46,50 @@ print('ord(E) is', ord('E'))
 
 lst3 = [[ord(char) for char in sublst] for sublst in lst2]
 
-# print('lst3 is', lst3)
+import math
 
-###
+### part 1
 
-routes = []
+# each triple records the height, the "visited yet" boolean, and the minimum known distance to that node.
+dijkstra1 = [[[num, False, math.inf] for num in sublst] for sublst in lst3]
 
-def walk(history):
-    current = history[len(history)-1]
-    height_current = lst3[current[0]][current[1]]
+dijkstra1[S[0]][S[1]][2] = 0
+
+found_E = False
+current = S
+
+while not found_E:
+    height_current = dijkstra1[current[0]][current[1]][0]
     Deltas = [(1, 0), (0, 1), (-1, 0), (0, -1)]
     for Delta in Deltas:
-        # make a copy of the history so we're not affecting the original version
-        history_copy = history.copy()
         new = tuple(map(sum, zip(current, Delta)))
-        # make sure new is on the grid
-        if new[0] >= 0 and new[0] < len(lst3) and new[1] >= 0 and new[1] < len(lst3[0]):
-            height_new = lst3[new[0]][new[1]]
+        # make sure new is on the grid:
+        if new[0] >= 0 and new[0] < len(dijkstra1) and new[1] >= 0 and new[1] < len(dijkstra1[0]):
             # make sure we can walk to new
+            height_new = dijkstra1[new[0]][new[1]][0]
             if (height_new - height_current <= 1):
-                # make sure we haven't already visited new
-                if (new not in history):
-                    history_copy.append(new)
-                    print('Delta is', Delta, 'and history is now', history)
-                    if new == E:
-                        routes.append(history_copy.copy())
-                        print('just added to routes! and the length is', len(routes[len(routes)-1]))
-                        return
-                    else:
-                        print('in the else loop, just before calling the function recursively, history is', history)
-                        walk(history_copy)
+                # make sure new is unvisited:
+                if not dijkstra1[new[0]][new[1]][1]:
+                    # set its tentative distance
+                    dijkstra1[new[0]][new[1]][2] = dijkstra1[current[0]][current[1]][2] + 1
+    dijkstra1[current[0]][current[1]][1] = True
+    # find an unvisited node with minimum known distance. (there may be many of these, but just choose the first one.)
+    the_min_data = [math.inf, None, None]
+    for i, row in enumerate(dijkstra1):
+        for j, node in enumerate(row):
+            if (not node[1]) and (node[2] < the_min_data[0]):
+                the_min_data = [node[2], i, j]
+    current = (the_min_data[1], the_min_data[2])
+    if current == E:
+        print('found E, and its distance is', dijkstra1[E[0]][E[1]][2])
 
 
 
 
 
-# walk([S])
-# print('after calling the walk function, routes is', routes)
-
-# # print(len(routes))
-# # print(len(routes[0]))
-
-# print('answer to part 1 is', min([len(route) for route in routes]) - 1)
 
 
 
 
 
-### the above function is taking way too long! a speedup: run through all routes at the same rate, keeping track of them in a list, and discard a potential new route if _any_ old route has already reached its newest node.
 
-routes_start = [[S]]
-
-def lengthen_routes(routes):
-    longer_routes = []
-    for route in routes:
-        current = route[len(route) - 1]
-        height_current = lst3[current[0]][current[1]]
-        Deltas = [(1, 0), (0, 1), (-1, 0), (0, -1)]
-        for Delta in Deltas:
-            # make a copy of the route so we're not affecting the original version
-            route_copy = route.copy()
-            new = tuple(map(sum, zip(current, Delta)))
-            # make sure new is on the grid
-            if new[0] >= 0 and new[0] < len(lst3) and new[1] >= 0 and new[1] < len(lst3[0]):
-                height_new = lst3[new[0]][new[1]]
-                # make sure we can walk to new
-                if (height_new - height_current <= 1):
-                    # make sure we haven't already visited new, in _any_ of the previous routes
-                    visited = False
-                    for any_route in routes:
-                        if new in any_route:
-                            visited = True
-                    if not visited:
-                        route_copy.append(new)
-                        longer_routes.append(route_copy)
-    return longer_routes
-
-def min_route():
-    inner_routes = routes_start
-    while True:
-        print('there are', len(inner_routes), 'viable routes of length', len(inner_routes[0]))
-        # print('now finding routes of length', len(inner_routes[0]) + 1)
-        inner_routes = lengthen_routes(inner_routes)
-        for route in inner_routes:
-            if route[len(route)-1] == E:
-                return len(route) - 1
-
-print(min_route())
