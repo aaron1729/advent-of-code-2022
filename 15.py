@@ -21,13 +21,9 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3'''
 
 y0 = 2000000
 
-
-
 # # un/comment this to toggle example vs actual data
 # str1 = example_str
 # y0 = 10
-
-
 
 
 #########
@@ -107,3 +103,26 @@ answer_1 -= len(beacons_along_y0_line)
 
 print('answer to part 1 is', answer_1)
 
+
+### part 2
+
+# brute force (using the above): loop through y0 running from 0 to 4 million, and print any anomalies.
+
+
+
+# for y0 in range(4000000):
+first_y0_to_appear = 2638237
+
+for y0 in range(4000000 - first_y0_to_appear + 5):
+    y0 = y0 + 2638237 + 1
+    print('y0 is', y0)
+    intervals_along_y0_line = []
+    for pair in lst:
+        intervals_along_y0_line = reduce_intervals(intervals_along_y0_line + interval_along_y0_line(pair[0], pair[1]))
+    if (len(intervals_along_y0_line) > 1) or (intervals_along_y0_line[0][0] > 0) or (intervals_along_y0_line[0][1] < 4000000):
+        print('y0 is', y0, 'and intervals_along_y0_line is', intervals_along_y0_line)
+        break
+
+# output for range(4 million):
+    # y0 is 2638237 and intervals_along_y0_line is [(-589410, 3270297), (3270299, 4077403)]
+    # ... and no others!! (i only computed these because of a silly mistake in the other file, i set x=3270297 instead of 3270298.)
