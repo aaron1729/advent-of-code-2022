@@ -16,6 +16,7 @@ Valve JJ has flow rate=21; tunnel leads to valve II'''
 
 
 
+
 # un/comment this to toggle example vs actual data
 str1 = example_str
 
@@ -38,8 +39,49 @@ for strng in lst1:
     start_valves = re.search("valves* ", strng).span()[1]
     sublst.append(strng[start_valves:].split(", "))
     lst.append(sublst)
-    
-
-print('now lst is', lst)
 
 
+# print('now lst is', lst)
+
+
+
+
+valves_dict = {}
+
+for sublst in lst:
+    valves_dict[sublst[0]] = {"flow": sublst[1], "targets": sublst[2]}
+
+print('valves_dict is:', valves_dict)
+
+
+
+
+
+# run through all possible sequences of actions, and add them to a list of routes. each sequence of actions is recorded as a list of 3-tuples containing the valve name, pressure, and time of opening.
+routes = []
+
+
+# the list "output" contains pairs of a valve and a boolean indicating whether we're sticking around to open it.
+# the set "opened" records *locally* whether a valve has been opened in a given route, as we're constructing it.
+def create_routes(current='AA', output=[('AA', False)], opened=set()):
+    # print('currently, length of output is:', len(output))
+    if len(output) == 2:
+        routes.append(output)
+        print('just added to routes, and and now its length is:', len(routes))
+        print('and the route added is:', output)
+        return
+
+    last = output[len(output)-1][0]
+    if not (last in opened):
+        new_opened = opened.copy()
+        new_opened.add(last)
+        create_routes(last, output + [(last, True)], new_opened)
+
+    for valve in valves_dict[last]["targets"]:
+        # fork off into different versions of the "output" list.
+        # print('forking off into different tunnels, and currently output is:', output)
+        create_routes(valve, output + [(valve, False)], opened)
+
+create_routes()
+
+print('after create_routes, routes length is:', len(routes))
