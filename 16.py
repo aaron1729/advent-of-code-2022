@@ -24,6 +24,8 @@ Valve JJ has flow rate=21; tunnel leads to valve II'''
 
 #########
 
+
+
 lst1 = str1.split('\n')
 
 # the first item in this list will be: ['AA', 0, ['DD', 'II', 'BB']]
@@ -116,9 +118,14 @@ for valve in essential_valves_dict:
 
 essential_valves_dict["AA"] = essential_valves_dict_AA
 
-# print('and now now, essential_valves_dict is:', essential_valves_dict)
+# print('and now now, essential_valves_dict is:', essential_valves_dict)
 
 
+essential_valves = list(essential_valves_dict.keys())
+
+essential_valves.remove('AA')
+
+print('the list essential_valves is:', essential_valves)
 
 # a route is recorded as a list of pairs. each pair contains a valve and a number saying at what minute the valve was opened. the numbers go in increasing order (i.e. the valves are listed in chronological order). all start with ('AA', 0), and valves never repeat.
 
@@ -126,11 +133,14 @@ essential_valves_dict["AA"] = essential_valves_dict_AA
 
 # # in the given optimal solution for the example, valve DD is being opened in minute 2. thus, it is open at minutes 3, 4, 5, ..., 30, i.e. for 28 minutes. its flow rate is 20, so it releases 28 * 20 = 560 units of pressure. so in general, if a valve with flow rate F is being opened at minute M, then it releases (30-M) * F units of pressure.
 
+total_time = 30
+
 def route_score(route):
     score = 0
     for (valve, time) in route:
-        if time < 30:
-            score += (30-time) * essential_valves_dict[valve]["flow"]
+        global total_time
+        if time < total_time:
+            score += (total_time-time) * essential_valves_dict[valve]["flow"]
     return score
 
 solution_to_example = [('AA', 0), ('DD, 2'), ('BB', 5), ('JJ', 9), ('HH', 17), ('EE', 21), ('CC', 24)]
@@ -140,13 +150,17 @@ solution_to_example = [('AA', 0), ('DD, 2'), ('BB', 5), ('JJ', 9), ('HH', 17), (
 high_score = 0
 counter = 0
 
-def make_routes(route=[('AA', 0)]):
+
+
+def make_routes(route=[('AA', 0)], allowed_essential_valves=essential_valves):
 
     end_of_route = route[len(route)-1]
     current = end_of_route[0]
     time = end_of_route[1]
     
-    if (time >= 30) or (len(route) == len(essential_valves_dict)):
+    # below, the +1 at the end is to account for the starting 'AA'
+    global total_time
+    if (time >= total_time) or (len(route) == len(allowed_essential_valves) + 1):
         global counter
         counter += 1
         global high_score
@@ -154,16 +168,173 @@ def make_routes(route=[('AA', 0)]):
         print('just found route number', counter, 'and now the new high score is', high_score)
         return
     
-    for valve in essential_valves_dict[current]["essential_targets"]:
-        visited_valves = [pair[0] for pair in route]
+    visited_valves = [pair[0] for pair in route]
+
+    for valve in allowed_essential_valves:
         if not valve in visited_valves:
             new_route = route.copy()
             new_route.append((valve, time + 1 + essential_valves_dict[current]["essential_targets"][valve]))
             make_routes(new_route)
 
-make_routes()
 
-print('high_score (the answer to part 1) is:', high_score)
+# # run the following function and print statement to solve part 1
+# make_routes()
+# print('the answer to part 1 is:', high_score) # 1418 for the actual input data, 1651 for the example data
 
 
 ######################################################
+
+# for part 2, use the same functions but with a different total_time:
+total_time = 26
+
+# idea: all that matters are the person and elephant's individual routes -- and in fact it doesn't matter which is whose. so, look at the set of disjoint union decompositions of the set of essential nodes (not counting the starting point 'AA'); for each decomposition S0 \sqcup S1, find the best score for S0 and S1 individually, and sum these to get the best possible total score given this decomposition.
+
+# with N essential valve, there are 2^N decompositions, and 2^N/2 = 2^{N-1} if we don't care which subset is whose. these are respectively in bijection with N-digit binary strings and those that start with 0 (i.e. (N-1)-digit binary strings). (said differently, WLOG we can pin "0" to be the target of the first essential valve.)
+
+def powerset(lst):
+    if len(lst) == 0:
+        return [[]]
+    shorter = lst.copy()
+    last = shorter.pop()
+    powerset_of_shorter = powerset(shorter)
+    return powerset_of_shorter + [subset + [last] for subset in powerset_of_shorter]
+
+essential_valves_powerset = powerset(essential_valves)
+
+# print('essential_valves_powerset is:', essential_valves_powerset)
+
+essential_valves_powerset_complements = []
+for subset in essential_valves_powerset:
+    complement = essential_valves.copy()
+    for element in subset:
+        complement.remove(element)
+    essential_valves_powerset_complements.append(complement)
+
+print('length of essential_valves:', len(essential_valves))
+print('length of powerset:', len(essential_valves_powerset))
+
+
+
+high_scores_2 = []
+
+# divide by two WLOG, since roles are interchangeable
+for i in range(len(essential_valves_powerset) // 2):
+
+    print('now i is', i)
+    
+    high_score = 0
+    counter = 0
+    make_routes(allowed_essential_valves=essential_valves_powerset[i])
+    high_score_0 = high_score
+
+    high_score = 0
+    counter = 0
+    make_routes(allowed_essential_valves=essential_valves_powerset_complements[i])
+    high_score_1 = high_score
+
+    high_scores_2.append([high_score_0, high_score_1, high_score_0 + high_score_1])
+
+
+print('high_scores_2 is:', high_scores_2)
+
+# print('solution to part 2 is:', max([triple[2] for triple in high_scores_2]))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####################################################################################################################################
+
+# the stuff below here is old, and probably worthless.
+
+
+
+#### score the two routes.
+
+def route_score2(route):
+    score = 0
+    for (valve, time) in route:
+        if time < 26:
+            score += (26-time) * essential_valves_dict[valve]["flow"]
+    return score
+
+
+
+high_score2 = 0
+counter2 = 0
+
+# as in part 1, this runs via recursion for both of them continuing to take steps. however, now we must be more careful: we want to only take those steps that stay *within* the time bounds. otherwise, we might occupy a valve valuelessly on one route, obstructing the other from incorporating it valuefully.
+def make_2_routes(route0=[('AA', 0)], route1=[('AA', 0)]):
+
+    end_of_route0 = route0[len(route0)-1]
+    current0 = end_of_route0[0]
+    time0 = end_of_route0[1]
+
+    end_of_route1 = route1[len(route1)-1]
+    current1 = end_of_route1[0]
+    time1 = end_of_route1[1]
+
+    # here, the +1 at the end is because route0 and route1 share the starting valve 'AA' (but they are otherwise disjoint).
+    if ((time0 >= 26) and (time1 >= 26)) or (len(route0) + len(route1) == len(essential_valves_dict) + 1):
+        global counter2
+        counter2 += 1
+        global high_score2
+        high_score2 = max(high_score2, route_score2(route0) + route_score2(route1))
+        print('just found completed route-pair number', counter2, 'and now the new high score is', high_score2)
+        return
+
+    visited_valves = [pair[0] for pair in route0] + [pair[0] for pair in route1]
+
+    # extend route0 and call the function recusively
+    for valve in essential_valves_dict[current0]["essential_targets"]:
+        # print('thinking about adding', valve, 'to route0')
+        if not valve in visited_valves:
+            # print('adding', valve, 'to route0')
+            new_route0 = route0.copy()
+            new_time0 = time0 + 1 + essential_valves_dict[current0]["essential_targets"][valve]
+            if new_time0 < 26:
+                new_route0.append((valve, new_time0))
+                print('now route0 is:', new_route0)
+                print('while route1 remains', route1)
+                make_2_routes(new_route0, route1)
+    
+    # extend route1 and call the function recusively
+    for valve in essential_valves_dict[current1]["essential_targets"]:
+        # print('thinking about adding', valve, 'to route1')
+        if not valve in visited_valves:
+            # print('adding', valve, 'to route1')
+            new_route1 = route1.copy()
+            new_time1 = time1 + 1 + essential_valves_dict[current1]["essential_targets"][valve]
+            if new_time1 < 26:
+                new_route1.append((valve, new_time1))
+                print('now route1 is:', new_route1)
+                print('while route0 remains', route0)
+                make_2_routes(route0, new_route1)
+
+# # run the following function and print statement to solve part 2
+# make_2_routes()
+# print('answer to part 2 is:', high_score2)
